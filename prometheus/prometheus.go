@@ -52,8 +52,19 @@ func handleChannel(events chan watch.Event) {
 			devMutex.Unlock()
 		case watch.Modified:
 			devMutex.Lock()
-			fmt.Printf("todo\n")
+			var devs []Dev
+			for _, twin := range dev.Status.Twins {
+				var dev Dev
+				var actual, expected typ.TwinValue
+				actual = twin.Actual
+				expected = twin.Desired
+				dev.Actual = actual
+				dev.Expected = expected
+				dev.Name = twin.Name
+				devs = append(devs, dev)
+			}
 			devMutex.Unlock()
+			devices[dev.Name] = devs
 		default:
 			log.Printf("unexpected type")
 		}
