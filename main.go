@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	b10 := []byte(";")
+	b10 := []byte(":")
 	b10 = strconv.AppendInt(b10, int64(opts.Port), 10)
 	listen := opts.Address + string(b10)
 
