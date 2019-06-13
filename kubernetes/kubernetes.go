@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
 	"k8s.io/client-go/rest"
@@ -50,6 +51,7 @@ var kubernetesRestClient *rest.RESTClient
 // kubeMaster is the url of the master
 // kubeConfig is the path to the kubeconfig
 func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error {
+	scheme := runtime.NewScheme()
 	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		log.Fatalf("can not connect to kubernetes api server: %v", err)
@@ -59,6 +61,7 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error 
 	conf.ContentType = runtime.ContentTypeJSON
 	conf.APIPath = "/apis"
 	conf.GroupVersion = &schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"}
+	conf.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	kubernetesRestClient, err = rest.RESTClientFor(conf)
 	if err != nil {
