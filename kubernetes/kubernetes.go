@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
 	"k8s.io/client-go/rest"
@@ -57,6 +58,7 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error 
 
 	conf.ContentType = runtime.ContentTypeJSON
 	conf.APIPath = "/apis"
+	conf.GroupVersion = &schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"}
 
 	kubernetesRestClient, err = rest.RESTClientFor(conf)
 	if err != nil {
