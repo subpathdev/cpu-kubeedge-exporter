@@ -12,6 +12,7 @@ import (
 )
 
 type Dev struct {
+	Name     string
 	Actual   typ.TwinValue
 	Expected typ.TwinValue
 }
@@ -44,13 +45,14 @@ func handleChannel(events chan watch.Event) {
 				expected = twin.Desired
 				dev.Actual = actual
 				dev.Expected = expected
+				dev.Name = twin.Name
 				devs = append(devs, dev)
 			}
 			devices[dev.Name] = devs
 			devMutex.Unlock()
 		case watch.Modified:
 			devMutex.Lock()
-			fmt.Printf("todo")
+			fmt.Printf("todo\n")
 			devMutex.Unlock()
 		default:
 			log.Printf("unexpected type")
@@ -59,12 +61,12 @@ func handleChannel(events chan watch.Event) {
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-	message := "Displays the key and the value:\n"
+	message := "Displays the device, the sensor name and the value:\n"
 	devMutex.RLock()
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
 		for _, v := range value {
-			message += fmt.Sprintf("%v: actual value: %v\t expected value:%v", key, v.Actual.Value, v.Expected.Value)
+			message += fmt.Sprintf("%v::%v: actual value: %v\t expected value:%v\n", key, v.Name, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
