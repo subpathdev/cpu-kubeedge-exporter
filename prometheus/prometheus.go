@@ -20,39 +20,41 @@ var devices map[string][]Dev
 var devMutex sync.RWMutex
 
 func handleChannel(events chan watch.Event) {
-	ev := <-events
+	for {
+		ev := <-events
 
-	dev, ok := ev.Object.(*typ.Device)
-	if !ok {
-		log.Fatalf("can not confort ev.Object to *typ.Device; err:")
-		return
-	}
-
-	switch ev.Type {
-	case watch.Deleted:
-		devMutex.Lock()
-		delete(devices, dev.ObjectMeta.Name)
-		devMutex.Unlock()
-	case watch.Added:
-		devMutex.Lock()
-		var devs []Dev
-		for _, twin := range dev.Status.Twins {
-			var dev Dev
-			var actual, expected typ.TwinValue
-			actual = twin.Actual
-			expected = twin.Desired
-			dev.Actual = actual
-			dev.Expected = expected
-			devs = append(devs, dev)
+		dev, ok := ev.Object.(*typ.Device)
+		if !ok {
+			log.Fatalf("can not confort ev.Object to *typ.Device; err:")
+			return
 		}
-		devices[dev.Name] = devs
-		devMutex.Unlock()
-	case watch.Modified:
-		devMutex.Lock()
-		fmt.Printf("todo")
-		devMutex.Unlock()
-	default:
-		log.Printf("unexpected type")
+
+		switch ev.Type {
+		case watch.Deleted:
+			devMutex.Lock()
+			delete(devices, dev.ObjectMeta.Name)
+			devMutex.Unlock()
+		case watch.Added:
+			devMutex.Lock()
+			var devs []Dev
+			for _, twin := range dev.Status.Twins {
+				var dev Dev
+				var actual, expected typ.TwinValue
+				actual = twin.Actual
+				expected = twin.Desired
+				dev.Actual = actual
+				dev.Expected = expected
+				devs = append(devs, dev)
+			}
+			devices[dev.Name] = devs
+			devMutex.Unlock()
+		case watch.Modified:
+			devMutex.Lock()
+			fmt.Printf("todo")
+			devMutex.Unlock()
+		default:
+			log.Printf("unexpected type")
+		}
 	}
 }
 
