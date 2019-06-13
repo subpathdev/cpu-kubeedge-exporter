@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"log"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,11 +48,26 @@ func (r ResourceEventHandler) obj2Event(typ awatch.EventType, obj interface{}) {
 
 var kubernetesRestClient *rest.RESTClient
 
+func createScheme(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"}, &typ.Device{}, &typ.DeviceList{})
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"})
+
+	return nil
+}
+
 // Init will initialise the connection to kubernetes api server
 // kubeMaster is the url of the master
 // kubeConfig is the path to the kubeconfig
 func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error {
 	scheme := runtime.NewScheme()
+	schemeBuilder := runtime.NewSchemeBuilder(createScheme)
+
+	err := schemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		log.Printf("can not build scheme; err is: %v", err)
+		return err
+	}
+
 	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		log.Fatalf("can not connect to kubernetes api server: %v", err)

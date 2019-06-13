@@ -6,6 +6,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+type DeviceList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Device `json:"items"`
+}
+
 type DeviceSpec struct {
 	DeviceModelRef *v1.LocalObjectReference `json:"deviceModelRef,omitempty"`
 	Protocol       ProtocolConfig           `json:"protocol,omitempty"`
@@ -131,4 +137,33 @@ func (in *Twin) DeepCopyInto(out *Twin) {
 
 func (in *TwinValue) DeepCopyInto(out *TwinValue) {
 	*out = *in
+}
+
+func (in *DeviceList) DeepCopyInto(out *DeviceList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Device, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+func (in *DeviceList) DeepCopy() *DeviceList {
+	if in == nil {
+		return nil
+	}
+	out := new(DeviceList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *DeviceList) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
 }
