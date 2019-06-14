@@ -63,6 +63,14 @@ func handleChannel(events chan watch.Event) {
 		case watch.Modified:
 			devMutex.Lock()
 			var devs []Dev
+			var node string
+			for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
+				for _, expression := range terms.MatchExpressions {
+					for _, value := range expression.Values {
+						node += fmt.Sprintf("%s, ", value)
+					}
+				}
+			}
 			for _, twin := range dev.Status.Twins {
 				var dev Dev
 				var actual, expected typ.TwinValue
@@ -71,6 +79,7 @@ func handleChannel(events chan watch.Event) {
 				dev.Actual = actual
 				dev.Expected = expected
 				dev.Name = twin.Name
+				dev.Node = node
 				devs = append(devs, dev)
 			}
 			devMutex.Unlock()
