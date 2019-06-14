@@ -105,11 +105,26 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handlePrometheus(w http.ResponseWriter, r *http.Request) {
+	message := "# TYPE cpu_kubeedge_exporter gauge\n"
+	devMutex.RLock()
+	log.Printf("request over %v devices", len(devices))
+	for _, v := range devices["cpu-sensor-tag01"] {
+		message += fmt.Sprintf("cpu-sensor-tag01{node:\"%v\",sensor:\"%v\",type:\"actual\"} %v\n", v.Node, v.Name, v.Actual.Value)
+		message += fmt.Sprintf("cpu-sensor-tag01{node:\"%v\",sensor:\"%v\",type:\"expected\"} %v\n", v.Node, v.Name, v.Actual.Value)
+	}
+	devMutex.RUnlock()
+	if _, err := w.Write([]byte(message)); err != nil {
+		log.Printf("could not write message; error is: %v", err)
+	}
+}
+
 func Init(events chan watch.Event, listen string) {
 	devices = make(map[string][]Dev)
 	go handleChannel(events)
 
 	http.HandleFunc("/", handleRequest)
+	http.HandleFunc("/metrics", handlePrometheus)
 	if err := http.ListenAndServe(listen, nil); err != nil {
 		log.Printf("could not run list and serve; error is: %v", err)
 	}
