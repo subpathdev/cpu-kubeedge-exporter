@@ -111,7 +111,7 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 	log.Printf("request over %v devices", len(devices))
 	for _, v := range devices["cpu-sensor-tag01"] {
 		message += fmt.Sprintf("cpu-sensor-tag01{node:\"%v\",sensor:\"%v\",type:\"actual\"} %v\n", v.Node, v.Name, v.Actual.Value)
-		message += fmt.Sprintf("cpu-sensor-tag01{node:\"%v\",sensor:\"%v\",type:\"expected\"} %v\n", v.Node, v.Name, v.Actual.Value)
+		message += fmt.Sprintf("cpu-sensor-tag01{node:\"%v\",sensor:\"%v\",type:\"expected\"} %v\n", v.Node, v.Name, v.Expected.Value)
 	}
 	devMutex.RUnlock()
 	if _, err := w.Write([]byte(message)); err != nil {
