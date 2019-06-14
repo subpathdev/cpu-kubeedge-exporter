@@ -87,7 +87,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
 		for _, v := range value {
-			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", v.Node, key, v.Name, v.Actual.Value, v.Expected.Value)
+			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", values.Node, key, v.Name, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
