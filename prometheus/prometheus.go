@@ -15,6 +15,7 @@ type Dev struct {
 	Name     string
 	Actual   typ.TwinValue
 	Expected typ.TwinValue
+	Node     string
 }
 
 var devices map[string][]Dev
@@ -37,6 +38,14 @@ func handleChannel(events chan watch.Event) {
 			devMutex.Unlock()
 		case watch.Added:
 			devMutex.Lock()
+			var node string
+			for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
+				for _, expression := range terms.MatchExpressions {
+					for _, value := range expression.Values {
+						node += fmt.Sprintf("%s, ", value)
+					}
+				}
+			}
 			var devs []Dev
 			for _, twin := range dev.Status.Twins {
 				var dev Dev
@@ -46,6 +55,7 @@ func handleChannel(events chan watch.Event) {
 				dev.Actual = actual
 				dev.Expected = expected
 				dev.Name = twin.Name
+				dev.Node = node
 				devs = append(devs, dev)
 			}
 			devices[dev.Name] = devs
@@ -77,7 +87,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
 		for _, v := range value {
-			message += fmt.Sprintf("%v::%v: actual value: %v\t expected value:%v\n", key, v.Name, v.Actual.Value, v.Expected.Value)
+			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", v.Node, key, v.Name, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
