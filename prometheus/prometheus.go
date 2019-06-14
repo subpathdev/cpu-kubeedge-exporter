@@ -82,7 +82,7 @@ func handleChannel(events chan watch.Event) {
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-	message := "Displays the device, the sensor name and the value:\n"
+	message := "Displays the matched nodes, the device, the sensor name and the value:\n"
 	devMutex.RLock()
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
