@@ -93,7 +93,7 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 	stopNever := make(chan struct{})
 	go si.Run(stopNever)
 
-	wfc := cache.NewListWatchFromClient(kubernetesRestClient, "nodes", "default", fields.Everything())
+	wfc := cache.NewListWatchFromClient(kubernetesRestClient, "nodes", v1.NamespaceAll, fields.Everything())
 	nsi := cache.NewSharedInformer(wfc, &v1.Node{}, 0)
 	eh := ResourceEventHandler{events: ev}
 	nsi.AddEventHandler(eh)
