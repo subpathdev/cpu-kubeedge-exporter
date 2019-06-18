@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/subpathdev/cpu-kubeedge-exporter/typ"
@@ -20,72 +21,91 @@ type Dev struct {
 
 var devices map[string][]Dev
 var devMutex sync.RWMutex
+var node string
 
-func handleChannel(events chan watch.Event) {
+func handleChannel(events chan watch.Event, eve chan watch.Event) {
 	for {
-		ev := <-events
+		select {
+		case ev := <-events:
+			dev, ok := ev.Object.(*typ.Device)
+			if !ok {
+				log.Fatalf("can not confort ev.Object to *typ.Device; err:")
+				return
+			}
 
-		dev, ok := ev.Object.(*typ.Device)
-		if !ok {
-			log.Fatalf("can not confort ev.Object to *typ.Device; err:")
-			return
-		}
-
-		switch ev.Type {
-		case watch.Deleted:
-			devMutex.Lock()
-			delete(devices, dev.ObjectMeta.Name)
-			devMutex.Unlock()
-		case watch.Added:
-			devMutex.Lock()
-			var node string
-			for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
-				for _, expression := range terms.MatchExpressions {
-					for _, value := range expression.Values {
-						node += fmt.Sprintf("%s, ", value)
+			switch ev.Type {
+			case watch.Deleted:
+				devMutex.Lock()
+				delete(devices, dev.ObjectMeta.Name)
+				devMutex.Unlock()
+			case watch.Added:
+				devMutex.Lock()
+				var node string
+				for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
+					for _, expression := range terms.MatchExpressions {
+						for _, value := range expression.Values {
+							node += fmt.Sprintf("%s, ", value)
+						}
 					}
 				}
-			}
-			var devs []Dev
-			for _, twin := range dev.Status.Twins {
-				var dev Dev
-				var actual, expected typ.TwinValue
-				actual = twin.Actual
-				expected = twin.Desired
-				dev.Actual = actual
-				dev.Expected = expected
-				dev.Name = twin.Name
-				dev.Node = node
-				devs = append(devs, dev)
-			}
-			devices[dev.Name] = devs
-			devMutex.Unlock()
-		case watch.Modified:
-			devMutex.Lock()
-			var devs []Dev
-			var node string
-			for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
-				for _, expression := range terms.MatchExpressions {
-					for _, value := range expression.Values {
-						node += fmt.Sprintf("%s, ", value)
+				var devs []Dev
+				for _, twin := range dev.Status.Twins {
+					var dev Dev
+					var actual, expected typ.TwinValue
+					actual = twin.Actual
+					expected = twin.Desired
+					dev.Actual = actual
+					dev.Expected = expected
+					dev.Name = twin.Name
+					dev.Node = node
+					devs = append(devs, dev)
+				}
+				devices[dev.Name] = devs
+				devMutex.Unlock()
+			case watch.Modified:
+				devMutex.Lock()
+				var devs []Dev
+				var node string
+				for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
+					for _, expression := range terms.MatchExpressions {
+						for _, value := range expression.Values {
+							node += fmt.Sprintf("%s, ", value)
+						}
 					}
 				}
+				for _, twin := range dev.Status.Twins {
+					var dev Dev
+					var actual, expected typ.TwinValue
+					actual = twin.Actual
+					expected = twin.Desired
+					dev.Actual = actual
+					dev.Expected = expected
+					dev.Name = twin.Name
+					dev.Node = node
+					devs = append(devs, dev)
+				}
+				devMutex.Unlock()
+				devices[dev.Name] = devs
+			default:
+				log.Printf("unexpected type")
 			}
-			for _, twin := range dev.Status.Twins {
-				var dev Dev
-				var actual, expected typ.TwinValue
-				actual = twin.Actual
-				expected = twin.Desired
-				dev.Actual = actual
-				dev.Expected = expected
-				dev.Name = twin.Name
-				dev.Node = node
-				devs = append(devs, dev)
+		case ev := <-eve:
+			dev, ok := ev.Object.(*v1.Node)
+			if !ok {
+				log.Fatalf("can not confort ev.Object to *typ.Device; err:")
+				return
 			}
-			devMutex.Unlock()
-			devices[dev.Name] = devs
-		default:
-			log.Printf("unexpected type")
+
+			switch ev.Type {
+			case watch.Added:
+				node += dev.Name + " added\n"
+			case watch.Modified:
+				node += dev.Name + " modified\n"
+			case watch.Deleted:
+				node += dev.Name + " deleted\n"
+			default:
+				log.Printf("unexpected type")
+			}
 		}
 	}
 }
@@ -100,6 +120,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	devMutex.RUnlock()
+	message += fmt.Sprintf("\n\n\n\n%v", node)
 	if _, err := w.Write([]byte(message)); err != nil {
 		log.Printf("could not write message; error is: %v", err)
 	}
@@ -119,9 +140,9 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Init(events chan watch.Event, listen string) {
+func Init(events chan watch.Event, listen string, eve chan watch.Event) {
 	devices = make(map[string][]Dev)
-	go handleChannel(events)
+	go handleChannel(events, eve)
 
 	http.HandleFunc("/", handleRequest)
 	http.HandleFunc("/metrics", handlePrometheus)

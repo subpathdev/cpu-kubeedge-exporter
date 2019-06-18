@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -58,7 +59,7 @@ func createScheme(scheme *runtime.Scheme) error {
 // Init will initialise the connection to kubernetes api server
 // kubeMaster is the url of the master
 // kubeConfig is the path to the kubeconfig
-func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error {
+func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev chan awatch.Event) error {
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(createScheme)
 
@@ -91,5 +92,13 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event) error 
 	si.AddEventHandler(reh)
 	stopNever := make(chan struct{})
 	go si.Run(stopNever)
+
+	wfc := cache.NewListWatchFromClient(kubernetesRestClient, "nodes", "default", fields.Everything())
+	nsi := cache.NewSharedInformer(wfc, &v1.Node{}, 0)
+	eh := ResourceEventHandler{events: ev}
+	nsi.AddEventHandler(eh)
+	stopNev := make(chan struct{})
+	go si.Run(stopNev)
+
 	return nil
 }

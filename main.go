@@ -43,9 +43,10 @@ func main() {
 	listen := opts.Address + string(b10)
 
 	events := make(chan watch.Event)
+	ev := make(chan watch.Event)
 
-	if err := kubernetes.Init(opts.Server, opts.ConfigPath, events); err != nil {
+	if err := kubernetes.Init(opts.Server, opts.ConfigPath, events, ev); err != nil {
 		log.Panicf("clould not run successfully")
 	}
-	prometheus.Init(events, listen)
+	prometheus.Init(events, listen, ev)
 }
