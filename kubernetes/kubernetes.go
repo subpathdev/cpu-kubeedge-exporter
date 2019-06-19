@@ -95,14 +95,23 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 	stopNever := make(chan struct{})
 	go si.Run(stopNever)
 
-	watchNodes(ev)
+	watchNodes(kubeMaster, kubeConfig, ev)
 
 	return nil
 }
 
-func watchNodes(ev chan awatch.Event) {
+func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	var opts metav1.ListOptions
-	inter := rest.Interface(kubernetesRestClient)
+	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	if err != nil {
+		log.Panicf("can not connect to kubernetes api server: %v", err)
+	}
+	conf.ContentType = runtime.ContentTypeJSON
+	conf.APIPath = "/apis"
+
+	kubeRestClient, err := rest.RESTClientFor(conf)
+
+	inter := rest.Interface(kubeRestClient)
 
 	coreV1Client := corev1.New(inter)
 	nodes := coreV1Client.Nodes()
