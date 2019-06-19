@@ -109,7 +109,7 @@ func watchNodes(ev chan awatch.Event) {
 
 	watchInterface, err := nodes.Watch(opts)
 	if err != nil {
-		log.Panicf("could not query nodes")
+		log.Panicf("could not query nodes; err is: %v", err)
 	}
 
 	go passEvent(watchInterface, ev)
