@@ -10,7 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
-	"k8s.io/api/core/v1"
+	//"k8s.io/api/core/v1"
+
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -93,12 +95,29 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 	stopNever := make(chan struct{})
 	go si.Run(stopNever)
 
-	wfc := cache.NewListWatchFromClient(kubernetesRestClient, "nodes", v1.NamespaceAll, fields.Everything())
-	nsi := cache.NewSharedInformer(wfc, &v1.Node{}, 0)
-	eh := ResourceEventHandler{events: ev}
-	nsi.AddEventHandler(eh)
-	stopNev := make(chan struct{})
-	go si.Run(stopNev)
+	watchNodes(ev)
 
 	return nil
+}
+
+func watchNodes(ev chan awatch.Event) {
+	var opts metav1.ListOptions
+	var inter rest.Interface
+
+	inter = rest.Interface(kubernetesRestClient)
+
+	coreV1Client := corev1.New(inter)
+	nodes := coreV1Client.Nodes()
+
+	watchInterface, err := nodes.Watch(opts)
+	if err != nil {
+		log.Panicf("could not query nodes")
+	}
+
+	go passEvent(watchInterface, ev)
+}
+
+func passEvent(watchInterface awatch.Interface, ev chan awatch.Event) {
+	wI := <-watchInterface.ResultChan()
+	ev <- wI
 }
