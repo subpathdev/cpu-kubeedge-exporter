@@ -131,13 +131,15 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	}
 
 	res := kubeRestClient.Get().Resource("nodes").Do()
+	if res.Error() != nil {
+		log.Panicf("res enterd in error; err: %v", res.Error())
+	}
 
 	mes, err := res.Raw()
 	if err != nil {
-		log.Panicf("res enterd in error; err: %v", err)
+		log.Printf("could not print raw message; err: %v", err)
 	}
 	log.Printf("result of get request: %v", string(mes))
-
 	//go passEvent(watchInterface, ev)
 }
 
