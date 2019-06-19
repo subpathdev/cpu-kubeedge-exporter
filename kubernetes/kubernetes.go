@@ -12,7 +12,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	//corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -108,9 +108,6 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 }
 
 func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
-	var opts metav1.ListOptions
-	var timeout int64
-
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(createNodeScheme)
 
@@ -133,23 +130,15 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 		log.Panicf("can not connect to kubernetes api server: %v", err)
 	}
 
-	inter := rest.Interface(kubeRestClient)
+	res := kubeRestClient.Get().Resource("nodes").Do()
 
-	coreV1Client := corev1.New(inter)
-	nodes := coreV1Client.Nodes()
-
-	timeout = 10
-	opts.TimeoutSeconds = &timeout
-	//opts.ResourceVersion = "v1alpha1"
-	//opts.TypeMeta.Kind = "Nodes"
-	//opts.TypeMeta.APIVersion = "v1alpha1"
-
-	watchInterface, err := nodes.Watch(opts)
+	mes, err := res.Raw()
 	if err != nil {
-		log.Panicf("could not query nodes; err is: %v", err)
+		log.Panicf("res enterd in error; err: %v", err)
 	}
+	log.Printf("result of get request: %v", string(mes))
 
-	go passEvent(watchInterface, ev)
+	//go passEvent(watchInterface, ev)
 }
 
 func passEvent(watchInterface awatch.Interface, ev chan awatch.Event) {
