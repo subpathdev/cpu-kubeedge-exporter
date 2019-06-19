@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
-	//"k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -59,7 +59,7 @@ func createScheme(scheme *runtime.Scheme) error {
 }
 
 func createNodeScheme(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(schema.GroupVersion{Group: "nodes.k8s.io", Version: "v1"}, &typ.Device{}, &typ.DeviceList{})
+	scheme.AddKnownTypes(schema.GroupVersion{Group: "nodes.k8s.io", Version: "v1"}, &v1.Node{}, &v1.NodeList{})
 	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"})
 
 	return nil
