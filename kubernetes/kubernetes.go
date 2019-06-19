@@ -111,6 +111,9 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	conf.APIPath = "/apis"
 
 	kubeRestClient, err := rest.RESTClientFor(conf)
+	if err != nil {
+		log.Panicf("can not connect to kubernetes api server: %v", err)
+	}
 
 	inter := rest.Interface(kubeRestClient)
 
@@ -119,6 +122,7 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 
 	timeout = 10
 	opts.TimeoutSeconds = &timeout
+	opts.Watch = true
 	watchInterface, err := nodes.Watch(opts)
 	if err != nil {
 		log.Panicf("could not query nodes; err is: %v", err)
