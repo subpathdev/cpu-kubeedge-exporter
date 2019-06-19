@@ -102,9 +102,7 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 
 func watchNodes(ev chan awatch.Event) {
 	var opts metav1.ListOptions
-	var inter rest.Interface
-
-	inter = rest.Interface(kubernetesRestClient)
+	inter := rest.Interface(kubernetesRestClient)
 
 	coreV1Client := corev1.New(inter)
 	nodes := coreV1Client.Nodes()
