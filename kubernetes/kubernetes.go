@@ -102,6 +102,7 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 
 func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	var opts metav1.ListOptions
+	var timeout int64
 	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		log.Panicf("can not connect to kubernetes api server: %v", err)
@@ -116,6 +117,8 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	coreV1Client := corev1.New(inter)
 	nodes := coreV1Client.Nodes()
 
+	timeout = 10
+	opts.TimeoutSeconds = &timeout
 	watchInterface, err := nodes.Watch(opts)
 	if err != nil {
 		log.Panicf("could not query nodes; err is: %v", err)
