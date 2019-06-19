@@ -20,5 +20,7 @@ jobs:
         include:
                 - stage: "Build Test"
                   script: make
+                  name: "build"
                 - stage: "Lint"
                   script: make lint
+                  name: "check style"
