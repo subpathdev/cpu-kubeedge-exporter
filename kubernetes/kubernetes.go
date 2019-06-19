@@ -140,7 +140,10 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 
 	timeout = 10
 	opts.TimeoutSeconds = &timeout
-	opts.Watch = true
+	opts.ResourceVersion = "v1alpha1"
+	opts.TypeMeta.Kind = "Nodes"
+	opts.TypeMeta.APIVersion = "v1alpha1"
+
 	watchInterface, err := nodes.Watch(opts)
 	if err != nil {
 		log.Panicf("could not query nodes; err is: %v", err)
