@@ -58,6 +58,13 @@ func createScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
+func createNodeScheme(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(schema.GroupVersion{Group: "node.k8s.io", Version: "v1alpha1"}, &typ.Device{}, &typ.DeviceList{})
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "devices.kubeedge.io", Version: "v1alpha1"})
+
+	return nil
+}
+
 // Init will initialise the connection to kubernetes api server
 // kubeMaster is the url of the master
 // kubeConfig is the path to the kubeconfig
@@ -103,6 +110,15 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	var opts metav1.ListOptions
 	var timeout int64
+
+	scheme := runtime.NewScheme()
+	schemeBuilder := runtime.NewSchemeBuilder(createNodeScheme)
+
+	err := schemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		log.Panicf("can not build scheme; err is: %v", err)
+	}
+
 	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		log.Panicf("can not connect to kubernetes api server: %v", err)
@@ -110,6 +126,7 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	conf.ContentType = runtime.ContentTypeJSON
 	conf.APIPath = "/apis"
 	conf.GroupVersion = &schema.GroupVersion{Group: "node.k8s.io", Version: "v1alpha1"}
+	conf.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	kubeRestClient, err := rest.RESTClientFor(conf)
 	if err != nil {
