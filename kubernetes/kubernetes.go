@@ -140,9 +140,9 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 
 	timeout = 10
 	opts.TimeoutSeconds = &timeout
-	opts.ResourceVersion = "v1alpha1"
-	opts.TypeMeta.Kind = "Nodes"
-	opts.TypeMeta.APIVersion = "v1alpha1"
+	//opts.ResourceVersion = "v1alpha1"
+	//opts.TypeMeta.Kind = "Nodes"
+	//opts.TypeMeta.APIVersion = "v1alpha1"
 
 	watchInterface, err := nodes.Watch(opts)
 	if err != nil {
