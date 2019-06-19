@@ -109,6 +109,7 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	}
 	conf.ContentType = runtime.ContentTypeJSON
 	conf.APIPath = "/apis"
+	conf.GroupVersion = &schema.GroupVersion{Group: "node.k8s.io", Version: "v1alpha1"}
 
 	kubeRestClient, err := rest.RESTClientFor(conf)
 	if err != nil {
