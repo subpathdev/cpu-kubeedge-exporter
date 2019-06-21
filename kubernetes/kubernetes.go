@@ -59,8 +59,8 @@ func createScheme(scheme *runtime.Scheme) error {
 }
 
 func createNodeScheme(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &v1.Node{}, &v1.NodeList{})
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "", Version: "v1"})
+	scheme.AddKnownTypes(schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta1"}, &v1.Node{}, &v1.NodeList{})
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta1"})
 
 	return nil
 }
@@ -122,7 +122,7 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 	}
 	conf.ContentType = runtime.ContentTypeJSON
 	conf.APIPath = "/apis"
-	conf.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
+	conf.GroupVersion = &schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta"}
 	conf.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	kubeRestClient, err := rest.RESTClientFor(conf)
