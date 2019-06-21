@@ -59,8 +59,8 @@ func createScheme(scheme *runtime.Scheme) error {
 }
 
 func createNodeScheme(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta1"}, &v1.Node{}, &v1.NodeList{})
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta1"})
+	scheme.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &v1.Node{}, &v1.NodeList{})
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "", Version: "v1"})
 
 	return nil
 }
@@ -121,8 +121,8 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 		log.Panicf("can not connect to kubernetes api server: %v", err)
 	}
 	conf.ContentType = runtime.ContentTypeJSON
-	conf.APIPath = "/apis"
-	conf.GroupVersion = &schema.GroupVersion{Group: "node.k8s.io", Version: "v1beta"}
+	conf.APIPath = "/api"
+	conf.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
 	conf.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	kubeRestClient, err := rest.RESTClientFor(conf)
