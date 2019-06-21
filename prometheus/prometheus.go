@@ -158,7 +158,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 								log.Printf("operator is exits; acutal not implemented\n")
 								//TODO
 							default:
-								log.Printf("operator is not in expected scope\n")
+								log.Printf("operator is %v and not in expected scope\n", op)
 							}
 						}
 					}
