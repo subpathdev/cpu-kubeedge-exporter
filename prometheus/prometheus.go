@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -130,7 +131,40 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
 		for _, v := range value {
-			message += fmt.Sprintf("Node: %v, NodeOperator: %v -> %v::%v: actual value: %v\t expected value:%v\n", v.Node, v.Operator, key, v.Name, v.Actual.Value, v.Expected.Value)
+			var node string
+			for _, op := range v.Operator {
+				for _, name := range v.Node {
+					for _, noName := range name {
+						for no := range nodes {
+							switch op {
+							case "In":
+								if strings.Contains(no, noName) {
+									node += fmt.Sprintf("%s, ", no)
+								}
+							case "notIn":
+								if !strings.Contains(no, noName) {
+									node += fmt.Sprintf("%s, ", no)
+								}
+							case "Exists":
+								log.Printf("operator is exits; acutal not implemented\n")
+								//TODO
+							case "DoesNotExists":
+								log.Printf("operator is exits; acutal not implemented\n")
+								//TODO
+							case "Gt":
+								log.Printf("operator is exits; acutal not implemented\n")
+								//TODO
+							case "Lt":
+								log.Printf("operator is exits; acutal not implemented\n")
+								//TODO
+							default:
+								log.Printf("operator is not in expected scope\n")
+							}
+						}
+					}
+				}
+			}
+			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", node, key, v.Name, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
