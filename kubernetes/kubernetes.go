@@ -12,7 +12,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	//corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -130,17 +130,15 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 		log.Panicf("can not connect to kubernetes api server: %v", err)
 	}
 
-	res := kubeRestClient.Get().Resource("nodes").Do()
-	if res.Error() != nil {
-		log.Panicf("res enterd in error; err: %v", res.Error())
+	corev1Client := corev1.New(rest.Interface(kubeRestClient))
+	nodes := corev1Client.Nodes()
+	watchInterface, err := nodes.Watch(metav1.ListOptions{})
+
+	if err != nil {
+		log.Panicf("can not create watch interface; error is: %v", err)
 	}
 
-	mes, err := res.Raw()
-	if err != nil {
-		log.Printf("could not print raw message; err: %v", err)
-	}
-	log.Printf("result of get request: %v", string(mes))
-	//go passEvent(watchInterface, ev)
+	go passEvent(watchInterface, ev)
 }
 
 func passEvent(watchInterface awatch.Interface, ev chan awatch.Event) {
