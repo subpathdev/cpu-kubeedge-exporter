@@ -98,10 +98,13 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 
 			switch ev.Type {
 			case watch.Added:
+				log.Printf("node %v added", dev.Name)
 				node += dev.Name + " added\n"
 			case watch.Modified:
+				log.Printf("node %v modiefied", dev.Name)
 				node += dev.Name + " modified\n"
 			case watch.Deleted:
+				log.Printf("node %v deleted", dev.Name)
 				node += dev.Name + " deleted\n"
 			default:
 				log.Printf("unexpected type")
