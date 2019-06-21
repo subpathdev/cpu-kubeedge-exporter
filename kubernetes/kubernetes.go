@@ -142,6 +142,8 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 }
 
 func passEvent(watchInterface awatch.Interface, ev chan awatch.Event) {
-	wI := <-watchInterface.ResultChan()
-	ev <- wI
+	for {
+		wI := <-watchInterface.ResultChan()
+		ev <- wI
+	}
 }
