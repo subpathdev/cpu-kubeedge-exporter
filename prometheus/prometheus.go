@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -16,12 +17,13 @@ type Dev struct {
 	Name     string
 	Actual   typ.TwinValue
 	Expected typ.TwinValue
-	Node     string
+	Node     [][]string
+	Operator []string
 }
 
 var devices map[string][]Dev
-var devMutex sync.RWMutex
-var node string
+var devMutex, nodeMutex sync.RWMutex
+var nodes map[string]int64
 
 func handleChannel(events chan watch.Event, eve chan watch.Event) {
 	for {
@@ -40,12 +42,14 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 				devMutex.Unlock()
 			case watch.Added:
 				devMutex.Lock()
-				var node string
+				var nodes [][]string
+				var operator []string
 				for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
 					for _, expression := range terms.MatchExpressions {
-						for _, value := range expression.Values {
-							node += fmt.Sprintf("%s, ", value)
-						}
+						var node []string
+						node = append(node, expression.Values...)
+						operator = append(operator, string(expression.Operator))
+						nodes = append(nodes, node)
 					}
 				}
 				var devs []Dev
@@ -57,7 +61,8 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 					dev.Actual = actual
 					dev.Expected = expected
 					dev.Name = twin.Name
-					dev.Node = node
+					dev.Node = nodes
+					dev.Operator = operator
 					devs = append(devs, dev)
 				}
 				devices[dev.Name] = devs
@@ -65,12 +70,14 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 			case watch.Modified:
 				devMutex.Lock()
 				var devs []Dev
-				var node string
+				var nodes [][]string
+				var operator []string
 				for _, terms := range dev.Spec.NodeSelector.NodeSelectorTerms {
 					for _, expression := range terms.MatchExpressions {
-						for _, value := range expression.Values {
-							node += fmt.Sprintf("%s, ", value)
-						}
+						var node []string
+						node = append(node, expression.Values...)
+						operator = append(operator, string(expression.Operator))
+						nodes = append(nodes, node)
 					}
 				}
 				for _, twin := range dev.Status.Twins {
@@ -81,7 +88,8 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 					dev.Actual = actual
 					dev.Expected = expected
 					dev.Name = twin.Name
-					dev.Node = node
+					dev.Node = nodes
+					dev.Operator = operator
 					devs = append(devs, dev)
 				}
 				devMutex.Unlock()
@@ -98,14 +106,17 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 
 			switch ev.Type {
 			case watch.Added:
-				log.Printf("node %v added", dev.Name)
-				node += dev.Name + " added\n"
+				nodeMutex.Lock()
+				nodes[dev.Name] = time.Now().Unix()
+				nodeMutex.Unlock()
 			case watch.Modified:
-				log.Printf("node %v modiefied", dev.Name)
-				node += dev.Name + " modified\n"
+				nodeMutex.Lock()
+				nodes[dev.Name] = time.Now().Unix()
+				nodeMutex.Unlock()
 			case watch.Deleted:
-				log.Printf("node %v deleted", dev.Name)
-				node += dev.Name + " deleted\n"
+				nodeMutex.Lock()
+				delete(nodes, dev.Name)
+				nodeMutex.Unlock()
 			default:
 				log.Printf("unexpected type")
 			}
@@ -119,11 +130,11 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("request over %v devices", len(devices))
 	for key, value := range devices {
 		for _, v := range value {
-			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", v.Node, key, v.Name, v.Actual.Value, v.Expected.Value)
+			message += fmt.Sprintf("Node: %v, NodeOperator: %v -> %v::%v: actual value: %v\t expected value:%v\n", v.Node, v.Operator, key, v.Name, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
-	message += fmt.Sprintf("\n\n\n\n%v", node)
+	message += fmt.Sprintf("\n\n\n\n%v", nodes)
 	if _, err := w.Write([]byte(message)); err != nil {
 		log.Printf("could not write message; error is: %v", err)
 	}
@@ -145,6 +156,7 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 
 func Init(events chan watch.Event, listen string, eve chan watch.Event) {
 	devices = make(map[string][]Dev)
+	nodes = make(map[string]int64)
 	go handleChannel(events, eve)
 
 	http.HandleFunc("/", handleRequest)
