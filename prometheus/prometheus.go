@@ -92,7 +92,7 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 		case ev := <-eve:
 			dev, ok := ev.Object.(*v1.Node)
 			if !ok {
-				log.Fatalf("can not confort ev.Object to *typ.Device; err:")
+				log.Fatalf("can not convert ev.Object to *typ.Device; err:")
 				return
 			}
 
