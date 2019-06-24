@@ -93,6 +93,7 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 					dev.Name = twin.Name
 					dev.Node = nodes
 					dev.Operator = operator
+					dev.ValueTyp = twin.Actual.Metadata["Type"]
 					devs = append(devs, dev)
 				}
 				devMutex.Unlock()
