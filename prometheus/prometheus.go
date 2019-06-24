@@ -186,7 +186,9 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 			if v.ValueTyp != "string" {
 				sensor := strings.ReplaceAll(key, "-", "_")
 				message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", sensor, v.Node, v.Name, v.Actual.Value)
-				message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
+				if v.Expected.Value != "" {
+					message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
+				}
 			}
 		}
 	}
