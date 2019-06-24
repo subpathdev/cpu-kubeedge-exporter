@@ -18,6 +18,7 @@ type Dev struct {
 	Name     string
 	Actual   typ.TwinValue
 	Expected typ.TwinValue
+	ValueTyp string
 	Node     [][]string
 	Operator []string
 }
@@ -64,6 +65,7 @@ func handleChannel(events chan watch.Event, eve chan watch.Event) {
 					dev.Name = twin.Name
 					dev.Node = nodes
 					dev.Operator = operator
+					dev.ValueTyp = twin.Actual.Metadata["Type"]
 					devs = append(devs, dev)
 				}
 				devices[dev.Name] = devs
@@ -164,7 +166,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			message += fmt.Sprintf("Node: %v -> %v::%v: actual value: %v\t expected value:%v\n", node, key, v.Name, v.Actual.Value, v.Expected.Value)
+			message += fmt.Sprintf("Node: %v -> %v::%v: value type is: %v\t actual value: %v\t expected value:%v\n", node, key, v.Name, v.ValueTyp, v.Actual.Value, v.Expected.Value)
 		}
 	}
 	devMutex.RUnlock()
@@ -178,9 +180,13 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 	message := "# TYPE cpu_kubeedge_exporter gauge\n"
 	devMutex.RLock()
 	log.Printf("request over %v devices", len(devices))
-	for _, v := range devices["cpu-sensor-tag01"] {
-		message += fmt.Sprintf("cpu-sensor-tag01{node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", v.Node, v.Name, v.Actual.Value)
-		message += fmt.Sprintf("cpu-sensor-tag01{node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", v.Node, v.Name, v.Expected.Value)
+	for key, dev := range devices {
+		for _, v := range dev {
+			if v.ValueTyp != "string" {
+				message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", key, v.Node, v.Name, v.Actual.Value)
+				message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", key, v.Node, v.Name, v.Expected.Value)
+			}
+		}
 	}
 	devMutex.RUnlock()
 	if _, err := w.Write([]byte(message)); err != nil {
