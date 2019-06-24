@@ -12,7 +12,8 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	//corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -108,36 +109,20 @@ func Init(kubeMaster string, kubeConfig string, events chan awatch.Event, ev cha
 }
 
 func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
-	scheme := runtime.NewScheme()
-	schemeBuilder := runtime.NewSchemeBuilder(createNodeScheme)
-
-	err := schemeBuilder.AddToScheme(scheme)
+	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
-		log.Panicf("can not build scheme; err is: %v", err)
+		panic(err.Error())
 	}
 
-	conf, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Panicf("can not connect to kubernetes api server: %v", err)
-	}
-	conf.ContentType = runtime.ContentTypeJSON
-	conf.APIPath = "/api"
-	conf.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
-	conf.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
-
-	kubeRestClient, err := rest.RESTClientFor(conf)
-	if err != nil {
-		log.Panicf("can not connect to kubernetes api server: %v", err)
+		panic(err.Error())
 	}
 
-	corev1Client := corev1.New(rest.Interface(kubeRestClient))
-	nodes := corev1Client.Nodes()
-	watchInterface, err := nodes.Watch(metav1.ListOptions{})
-
+	watchInterface, err := clientset.CoreV1().Nodes().Watch(metav1.ListOptions{})
 	if err != nil {
-		log.Panicf("can not create watch interface; error is: %v", err)
+		panic(err.Error())
 	}
-
 	go passEvent(watchInterface, ev)
 }
 
