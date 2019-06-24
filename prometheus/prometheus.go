@@ -181,13 +181,12 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 	message := "# TYPE cpu_kubeedge_exporter gauge\n"
 	devMutex.RLock()
 	log.Printf("request over %v devices", len(devices))
-	for key, dev := range devices {
+	for sensor, dev := range devices {
 		for _, v := range dev {
 			if strings.Compare(v.ValueTyp, "string") != 0 {
-				sensor := strings.ReplaceAll(key, "-", "_")
-				message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", sensor, v.Node, v.Name, v.Actual.Value)
+				message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=%v,node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", sensor, v.Node, v.Name, v.Actual.Value)
 				if v.Expected.Value != "" {
-					message += fmt.Sprintf("%v{node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
+					message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=%v,node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
 				}
 			}
 		}
