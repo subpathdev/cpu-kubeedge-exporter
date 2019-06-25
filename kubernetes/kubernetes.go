@@ -59,13 +59,6 @@ func createScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func createNodeScheme(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &v1.Node{}, &v1.NodeList{})
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "", Version: "v1"})
-
-	return nil
-}
-
 // Init will initialise the connection to kubernetes api server
 // kubeMaster is the url of the master
 // kubeConfig is the path to the kubeconfig
