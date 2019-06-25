@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	awatch "k8s.io/apimachinery/pkg/watch"
 
-	"k8s.io/api/core/v1"
+	//"k8s.io/api/core/v1"
 
 	//corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -112,16 +112,22 @@ func watchNodes(kubeMaster string, kubeConfig string, ev chan awatch.Event) {
 		panic(err.Error())
 	}
 
+	go passEvent(ev, clientset)
+}
+
+func passEvent(ev chan awatch.Event, clientset *kubernetes.Clientset) {
 	watchInterface, err := clientset.CoreV1().Nodes().Watch(metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
-	go passEvent(watchInterface, ev)
-}
-
-func passEvent(watchInterface awatch.Interface, ev chan awatch.Event) {
 	for {
 		wI := <-watchInterface.ResultChan()
+		if wI.Object == nil {
+			watchInterface, err = clientset.CoreV1().Nodes().Watch(metav1.ListOptions{})
+			if err != nil {
+				panic(err.Error())
+			}
+		}
 		ev <- wI
 	}
 }
