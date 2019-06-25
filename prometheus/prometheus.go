@@ -184,9 +184,11 @@ func handlePrometheus(w http.ResponseWriter, r *http.Request) {
 	for sensor, dev := range devices {
 		for _, v := range dev {
 			if strings.Compare(v.ValueTyp, "string") != 0 {
-				message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=%v,node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", sensor, v.Node, v.Name, v.Actual.Value)
+				if v.Actual.Value != "" {
+					message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=\"%v\",node=\"%v\",sensor=\"%v\",type=\"actual\"} %v\n", sensor, v.Node, v.Name, v.Actual.Value)
+				}
 				if v.Expected.Value != "" {
-					message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=%v,node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
+					message += fmt.Sprintf("cpu_kubeedge_exporter{sensorGroup=\"%v\",node=\"%v\",sensor=\"%v\",type=\"expected\"} %v\n", sensor, v.Node, v.Name, v.Expected.Value)
 				}
 			}
 		}
